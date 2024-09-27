@@ -15,7 +15,6 @@ import {
 import Sidebar from '../components/sideBar';
 import MainHeader from '../components/mainHeader';
 import Footer from '../components/footer';
-import { useNavigate } from 'react-router-dom';
 import HomeCA from '../../CadreAdmin/homeCA.jsx';
 import HomeCP from '../../ChefPole/homeCP.jsx';
 import HomeCD from '../../ChefDiv/homeCD.jsx';
@@ -34,7 +33,6 @@ const AfficherRole = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
     const [routes, setRoutes] = useState([]);
-    const navigate = useNavigate();
 
     useEffect(() => {
         fetchRoles();

@@ -61,6 +61,10 @@ public class Affaire {
     @Column(name = "part_cid", nullable = false)
     private Double partCID;
 
+    @ManyToOne
+    @JoinColumn(name = "chef_projet_id")
+    private Utilisateur chefProjet;
+
     @PrePersist
     public void prePersist() {
         if (this.statusAffaire == null) {

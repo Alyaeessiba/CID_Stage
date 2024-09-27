@@ -1,17 +1,13 @@
 package com.example.backend.controller;
 
-import com.example.backend.model.Affaire;
-import com.example.backend.model.StatusAffaire;
-import com.example.backend.repository.AffaireRepository;
-import com.example.backend.repository.ClientRepository;
-import com.example.backend.repository.DivisionRepository;
-import com.example.backend.repository.PoleRepository;
+import com.example.backend.model.*;
+import com.example.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
+import java.time.Year;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/affaires")
@@ -28,6 +24,9 @@ public class AffaireController {
 
     @Autowired
     private DivisionRepository divisionRepository;
+
+    @Autowired
+    private UtilisateurRepository utilisateurRepository;
 
     @GetMapping
     public List<Affaire> getAllAffaires() {
@@ -120,5 +119,195 @@ public class AffaireController {
                     return ResponseEntity.ok(String.valueOf(nextId));
                 })
                 .orElse(ResponseEntity.ok(String.valueOf(java.time.Year.now().getValue() * 100000 + 1)));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getAffaireStats() {
+        long total = affaireRepository.count();
+        long enCours = affaireRepository.countByStatusAffaire(StatusAffaire.EN_PRODUCTION);
+        long terminees = affaireRepository.countByStatusAffaire(StatusAffaire.TERMINE);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("enCours", enCours);
+        stats.put("terminees", terminees);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/monthly-stats")
+    public ResponseEntity<List<Long>> getMonthlyStats() {
+        List<Long> monthlyStats = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        for (int i = 0; i < 12; i++) {
+            cal.set(Calendar.MONTH, i);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            Date startOfMonth = cal.getTime();
+            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+            Date endOfMonth = cal.getTime();
+            long count = affaireRepository.countByStatusAffaireAndDateFinBetween(StatusAffaire.TERMINE, startOfMonth, endOfMonth);
+            monthlyStats.add(count);
+        }
+        return ResponseEntity.ok(monthlyStats);
+    }
+
+    @GetMapping("/stats/{userId}")
+    public ResponseEntity<Map<String, Long>> getAffaireStatsByPole(@PathVariable Long userId) {
+        return utilisateurRepository.findById(userId)
+            .map(user -> {
+                Pole pole = user.getPole();
+                if (pole == null) {
+                    return ResponseEntity.badRequest().body(Collections.singletonMap("error", 0L));
+                }
+
+                Map<String, Long> stats = new HashMap<>();
+                stats.put("total", affaireRepository.countByPolePrincipale(pole));
+                stats.put("enCreation", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.EN_CREATION));
+                stats.put("cdpDecide", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.CDP_DECIDE));
+                stats.put("enProduction", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.EN_PRODUCTION));
+                stats.put("interrompu", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.INTERROMPU));
+                stats.put("termine", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.TERMINE));
+                stats.put("annule", affaireRepository.countByPolePrincipaleAndStatusAffaire(pole, StatusAffaire.ANNULE));
+
+                return ResponseEntity.ok(stats);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/chart-data/{userId}")
+    public ResponseEntity<List<Map<String, Object>>> getChartDataByPole(@PathVariable Long userId) {
+        return (ResponseEntity<List<Map<String, Object>>>) utilisateurRepository.findById(userId)
+            .map(user -> {
+                Pole pole = user.getPole();
+                if (pole == null) {
+                    return ResponseEntity.badRequest().body(null);
+                }
+
+                int currentYear = Year.now().getValue();
+                List<Object[]> rawData = affaireRepository.countByPolePrincipaleAndStatusAffaireGroupByMonth(pole, currentYear);
+
+                Map<StatusAffaire, long[]> statusData = new EnumMap<>(StatusAffaire.class);
+                for (StatusAffaire status : StatusAffaire.values()) {
+                    statusData.put(status, new long[12]);
+                }
+
+                for (Object[] row : rawData) {
+                    int month = ((Number) row[0]).intValue() - 1; // Adjust for 0-based array
+                    StatusAffaire status = (StatusAffaire) row[1];
+                    long count = ((Number) row[2]).longValue();
+                    statusData.get(status)[month] = count;
+                }
+
+                List<Map<String, Object>> seriesData = new ArrayList<>();
+                for (Map.Entry<StatusAffaire, long[]> entry : statusData.entrySet()) {
+                    Map<String, Object> series = new HashMap<>();
+                    series.put("name", entry.getKey().name());
+                    series.put("data", entry.getValue());
+                    seriesData.add(series);
+                }
+
+                return ResponseEntity.ok(seriesData);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/stats/division/{userId}")
+    public ResponseEntity<Map<String, Long>> getAffaireStatsByDivision(@PathVariable Long userId) {
+        return utilisateurRepository.findById(userId)
+            .map(user -> {
+                Division division = user.getDivision();
+                if (division == null) {
+                    return ResponseEntity.badRequest().body(Collections.singletonMap("error", 0L));
+                }
+
+                Map<String, Long> stats = new HashMap<>();
+                stats.put("total", affaireRepository.countByDivisionPrincipale(division));
+                stats.put("enCreation", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.EN_CREATION));
+                stats.put("cdpDecide", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.CDP_DECIDE));
+                stats.put("enProduction", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.EN_PRODUCTION));
+                stats.put("interrompu", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.INTERROMPU));
+                stats.put("termine", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.TERMINE));
+                stats.put("annule", affaireRepository.countByDivisionPrincipaleAndStatusAffaire(division, StatusAffaire.ANNULE));
+
+                return ResponseEntity.ok(stats);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/chart-data/division/{userId}")
+    public ResponseEntity<List<Map<String, Object>>> getChartDataByDivision(@PathVariable Long userId) {
+        return (ResponseEntity<List<Map<String, Object>>>) utilisateurRepository.findById(userId)
+            .map(user -> {
+                Division division = user.getDivision();
+                if (division == null) {
+                    return ResponseEntity.badRequest().body(null);
+                }
+
+                int currentYear = Year.now().getValue();
+                List<Object[]> rawData = affaireRepository.countByDivisionPrincipaleAndStatusAffaireGroupByMonth(division, currentYear);
+
+                Map<StatusAffaire, long[]> statusData = new EnumMap<>(StatusAffaire.class);
+                for (StatusAffaire status : StatusAffaire.values()) {
+                    statusData.put(status, new long[12]);
+                }
+
+                for (Object[] row : rawData) {
+                    int month = ((Number) row[0]).intValue() - 1; // Adjust for 0-based array
+                    StatusAffaire status = (StatusAffaire) row[1];
+                    long count = ((Number) row[2]).longValue();
+                    statusData.get(status)[month] = count;
+                }
+
+                List<Map<String, Object>> seriesData = new ArrayList<>();
+                for (Map.Entry<StatusAffaire, long[]> entry : statusData.entrySet()) {
+                    Map<String, Object> series = new HashMap<>();
+                    series.put("name", entry.getKey().name());
+                    series.put("data", entry.getValue());
+                    seriesData.add(series);
+                }
+
+                return ResponseEntity.ok(seriesData);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-division/{userId}")
+    public ResponseEntity<List<Affaire>> getAffairesByUserDivision(@PathVariable Long userId) {
+        return (ResponseEntity<List<Affaire>>) utilisateurRepository.findById(userId)
+            .map(user -> {
+                Division division = user.getDivision();
+                if (division == null) {
+                    return ResponseEntity.badRequest().body(null);
+                }
+                List<Affaire> affaires = affaireRepository.findByDivisionPrincipale(division);
+                return ResponseEntity.ok(affaires);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}/chef-projet")
+    public ResponseEntity<Object> assignChefProjet(@PathVariable Long id, @RequestBody Map<String, Long> request) {
+        Long chefProjetId = request.get("chefProjetId");
+        Optional<Affaire> affaireOpt = affaireRepository.findById(id);
+        
+        if (!affaireOpt.isPresent()) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Affaire not found");
+            return ResponseEntity.notFound().build();
+        }
+        
+        Affaire affaire = affaireOpt.get();
+        Optional<Utilisateur> chefProjetOpt = utilisateurRepository.findById(chefProjetId);
+        
+        if (!chefProjetOpt.isPresent()) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Chef de Projet not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        Utilisateur chefProjet = chefProjetOpt.get();
+        affaire.setChefProjet(chefProjet);
+        Affaire updatedAffaire = affaireRepository.save(affaire);
+        return ResponseEntity.ok().body(updatedAffaire);
     }
 }

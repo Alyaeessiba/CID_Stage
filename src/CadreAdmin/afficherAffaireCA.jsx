@@ -2,23 +2,16 @@
 /* eslint-disable jsx-a11y/img-redundant-alt */
 /* eslint-disable no-script-url */
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-    faHome, 
-    faArrowRight, 
-    faInfo, 
-    faEdit, 
-    faTimes, 
-    faPlus
-    // Remove faHeart from this import
-} from '@fortawesome/free-solid-svg-icons';
+import { faInfo, faEdit, faTimes, faHome, faArrowRight,faPlus, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
 import Sidebar from './components/sideBar';
 import MainHeader from './components/mainHeader';
 import Footer from './components/footer';
+import { useAffaire } from '../context/AffaireContext';
 
 const TableHeader = ({ columns, sortConfig, requestSort }) => (
     <thead>
@@ -78,6 +71,8 @@ const Breadcrumb = ({ items }) => (
 );
 
 const AfficherAffaire = () => {
+    const navigate = useNavigate();
+    const { setCurrentAffaireId } = useAffaire();
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
@@ -90,6 +85,7 @@ const AfficherAffaire = () => {
     const [clients, setClients] = useState([]);
     const [poles, setPoles] = useState([]);
     const [divisions, setDivisions] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchAffaires();
@@ -149,21 +145,47 @@ const AfficherAffaire = () => {
         }
     };
 
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+    };
+
+    const filteredAffaires = useMemo(() => {
+        return affaires.filter(affaire => 
+            affaire.idAffaire.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+            affaire.libelle_affaire.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            affaire.client.nom_client.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [affaires, searchTerm]);
+
     const sortedData = useMemo(() => {
-        let sortableData = [...affaires];
+        let sortableData = [...filteredAffaires];
         if (sortConfig.key !== null) {
             sortableData.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (sortConfig.key === 'client.nom_client') {
+                    // Handle nested client.nom_client property
+                    const aValue = a.client?.nom_client?.toLowerCase() || '';
+                    const bValue = b.client?.nom_client?.toLowerCase() || '';
+                    if (aValue < bValue) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (aValue > bValue) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
+                } else {
+                    // Handle other properties
+                    if (a[sortConfig.key] < b[sortConfig.key]) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (a[sortConfig.key] > b[sortConfig.key]) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
                 }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
             });
         }
         return sortableData;
-    }, [affaires, sortConfig]);
+    }, [filteredAffaires, sortConfig]);
 
     const requestSort = (key) => {
         let direction = 'ascending';
@@ -181,6 +203,13 @@ const AfficherAffaire = () => {
     };
 
     const handleCloseModal = () => setShowModal(false);
+
+    const handleViewMissions = () => {
+        if (selectedAffaire) {
+            setCurrentAffaireId(selectedAffaire.idAffaire);
+            navigate('/addMissionCA');
+        }
+    };
 
     const handleDelete = async () => {
         try {
@@ -427,11 +456,18 @@ const AfficherAffaire = () => {
         );
     });
 
+    const getSortIcon = (columnName) => {
+        if (sortConfig.key === columnName) {
+            return sortConfig.direction === 'ascending' ? faSortUp : faSortDown;
+        }
+        return faSort;
+    };
+
     return (
         <div className="wrapper">
             <Sidebar />
             <div className="main-panel">
-                <MainHeader />
+                <MainHeader onSearch={handleSearch} />
                 <div className="container">
                     <div className="page-inner">
                         <div className="page-header">
@@ -458,7 +494,23 @@ const AfficherAffaire = () => {
                                                 <p>{error}</p>
                                             ) : (
                                                 <table className="table table-striped table-hover mt-3">
-                                                    <TableHeader columns={columns} sortConfig={sortConfig} requestSort={requestSort} />
+                                                    <thead>
+                                                        <tr>
+                                                            <th onClick={() => requestSort('idAffaire')}>
+                                                                ID Affaire <FontAwesomeIcon icon={getSortIcon('idAffaire')} />
+                                                            </th>
+                                                            <th onClick={() => requestSort('libelle_affaire')}>
+                                                                Libellé Affaire <FontAwesomeIcon icon={getSortIcon('libelle_affaire')} />
+                                                            </th>
+                                                            <th onClick={() => requestSort('statusAffaire')}>
+                                                                Status <FontAwesomeIcon icon={getSortIcon('statusAffaire')} />
+                                                            </th>
+                                                            <th onClick={() => requestSort('client.nom_client')}>
+                                                                Client <FontAwesomeIcon icon={getSortIcon('client.nom_client')} />
+                                                            </th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
                                                     <tbody>
                                                         {sortedData.map((item) => (
                                                             <TableRow key={item.idAffaire} item={item} onShowModal={handleShowModal} />
@@ -540,7 +592,7 @@ const AfficherAffaire = () => {
                     )}
                     {modalType === 'info' && (
                         <>
-                            <Button variant="primary" onClick={() => window.location.href = '/AfficherMissionCA'}>
+                            <Button variant="primary" onClick={handleViewMissions}>
                                 Voir les missions
                             </Button>
                             <Button variant="secondary" onClick={handleCloseModal}>

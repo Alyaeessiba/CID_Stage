@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Button, Modal, Form, Table, Alert } from 'react-bootstrap';
+import { Button, Modal, Form, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -22,7 +22,6 @@ import Footer from '../components/footer';
 const AfficherUser = () => {
     const [users, setUsers] = useState([]);
     const [poles, setPoles] = useState([]);
-    const [divisions, setDivisions] = useState([]);
     const [pays, setPays] = useState([]);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -331,17 +330,6 @@ const AfficherUser = () => {
         }
     };
 
-    const handleRoleChange = (selectedOptions) => {
-        const selectedRoles = selectedOptions ? selectedOptions.map(option => ({
-            id_role: option.value,
-            nom_role: option.label,
-            requiresPole: roles.find(r => r.id_role === option.value)?.requiresPole || false,
-            requiresDivision: roles.find(r => r.id_role === option.value)?.requiresDivision || false
-        })) : [];
-
-        setSelectedUser(prevState => ({ ...prevState, roles: selectedRoles }));
-        updateInputVisibility(selectedRoles);
-    };
 
     const updateInputVisibility = (selectedRoles) => {
         const requiresPole = selectedRoles.some(role =>

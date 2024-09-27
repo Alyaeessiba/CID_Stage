@@ -2,14 +2,19 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Role;
 import com.example.backend.model.Utilisateur;
+import com.example.backend.model.Pays;
 import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.UtilisateurRepository;
+import com.example.backend.repository.PaysRepository;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,6 +27,9 @@ public class UtilisateurController {
     
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private PaysRepository paysRepository;
 
     @GetMapping
     public List<Utilisateur> getAllUtilisateurs() {
@@ -60,10 +68,23 @@ public class UtilisateurController {
                     existingUtilisateur.setSexe(utilisateur.getSexe());
                     existingUtilisateur.setAdresse(utilisateur.getAdresse());
 
-                    // Handle Pole, Division, and Pays
+                    // Handle Pole and Division
                     existingUtilisateur.setPole(utilisateur.getPole());
                     existingUtilisateur.setDivision(utilisateur.getDivision());
-                    existingUtilisateur.setPays(utilisateur.getPays());
+                    
+                    // Handle Pays
+                    if (utilisateur.getPays() != null) {
+                        Long paysId = utilisateur.getPays().getId_pays();
+                        if (paysId != null) {
+                            Pays pays = paysRepository.findById(paysId)
+                                    .orElseThrow(() -> new RuntimeException("Country not found with id: " + paysId));
+                            existingUtilisateur.setPays(pays);
+                        } else {
+                            existingUtilisateur.setPays(null);
+                        }
+                    } else {
+                        existingUtilisateur.setPays(null);
+                    }
 
                     // Handle Roles
                     if (utilisateur.getRoles() != null) {
@@ -117,14 +138,41 @@ public class UtilisateurController {
         // User authenticated successfully
         Set<Role> roles = utilisateur.getRoles();
         if (roles == null || roles.isEmpty()) {
-            return ResponseEntity.ok().body(new LoginResponse("No role assigned", null));
+            return ResponseEntity.ok().body(new LoginResponse("No role assigned", null, utilisateur.getId_utilisateur()));
         }
 
         // For simplicity, we'll use the first role's redirection link
-        // You might want to implement more complex logic if a user can have multiple roles
         String redirectionLink = roles.iterator().next().getRedirectionLink();
 
-        return ResponseEntity.ok().body(new LoginResponse("Login successful", redirectionLink));
+        return ResponseEntity.ok().body(new LoginResponse("Login successful", redirectionLink, utilisateur.getId_utilisateur()));
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<?> getUserDetails(@RequestParam String identifier) {
+        try {
+            Utilisateur user = utilisateurRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(identifier, identifier)
+                    .orElse(null);
+            if (user != null) {
+                Map<String, String> userDetails = new HashMap<>();
+                userDetails.put("firstName", user.getPrenom());
+                userDetails.put("lastName", user.getNom());
+                userDetails.put("email", user.getEmail());
+                return ResponseEntity.ok(userDetails);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching user details");
+        }
+    }
+
+    @GetMapping("/chefs-de-projet")
+    public ResponseEntity<List<Utilisateur>> getChefsDeProjet() {
+        List<Utilisateur> chefsDeProjet = utilisateurRepository.findAll().stream()
+                .filter(utilisateur -> utilisateur.getRoles().stream()
+                        .anyMatch(role -> role.getNom_role().equalsIgnoreCase("Chef de Projet")))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(chefsDeProjet);
     }
 }
 
@@ -138,10 +186,12 @@ class LoginRequest {
 class LoginResponse {
     private String message;
     private String redirectionLink;
+    private Long id_utilisateur;
 
-    public LoginResponse(String message, String redirectionLink) {
+    public LoginResponse(String message, String redirectionLink, Long id_utilisateur) {
         this.message = message;
         this.redirectionLink = redirectionLink;
+        this.id_utilisateur = id_utilisateur;
     }
 }
 

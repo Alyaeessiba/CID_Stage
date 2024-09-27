@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { AffaireProvider } from './context/AffaireContext';
 import PageMeta from './PageMeta';
+import { UserProvider, useUser } from './context/UserContext';
 
 // Import views
 import Login from './views/login';
@@ -11,15 +13,15 @@ import AddMissionCA from './CadreAdmin/addMissionCA';
 import AfficherMissionCA from './CadreAdmin/afficherMissionCA';
 import HomeCP from './ChefPole/homeCP';
 import AfficherAffaireCP from './ChefPole/afficherAffaireCP';
-import afficherMissionCP from './ChefPole/afficherMissionCP'
+import AfficherMissionCP from './ChefPole/afficherMissionCP'
 import HomeCD from './ChefDiv/homeCD';
 import AfficherAffaireCD from './ChefDiv/afficherAffaireCD';
-import AddDivisionsCD from './ChefDiv/addDivisionsCD';
+import RepartirMissionCD from './ChefDiv/repartitionMissionCD';
 import AfficherMissionCD from './ChefDiv/afficherMissionCD';
 import DesignationChefProjetCD from './ChefDiv/designationChefProjetCD';
 import HomeCDP from './ChefProjet/homeCDP';
 import AfficherAffaireCDP from './ChefProjet/afficherAffaireCDP';
-import AfficherMissionCDP from './ChefProjet/afficherMissionCDP'
+import AfficherMissionCDP from './ChefProjet/afficherMissionCDP';
 import ConsultMissionCDP from './ChefProjet/consultMissionCDP';
 import AfficherUnite from './Admin/Unite/afficherUnite'
 import AfficherRole from './Admin/Role/afficherRole';
@@ -32,9 +34,29 @@ import AfficherPays from './Admin/Pays/afficherPays'
 import AfficherSousTraitant from './Admin/SousTraitant/afficherST'
 import AfficherPartenaire from './Admin/Partenaire/afficherPartenaire'
 import HomeAdmin from './Admin/HomeAdmin';
+import ProfilePageCA from './CadreAdmin/profileCA';
+import ProfilePageAdmin from './Admin/profileAdmin';
+import ProfilePageCP from './ChefPole/profileCP';
+
+function LogoutComponent() {
+  const { setUser } = useUser();
+
+  React.useEffect(() => {
+    setUser(null);
+    localStorage.removeItem('userId');
+  }, [setUser]);
+
+  return <Navigate to="/login" />;
+}
+
+// Root redirect component
+function RootRedirect() {
+  return <Navigate to="/login" replace />;
+}
+
 // Update the routes array with French titles
 const routes = [
-  { path: '/', element: Login, title: 'Login' },
+  { path: '/login', element: Login, title: 'Login' },
   { path: '/HomeCA', element: HomeCA, title: 'Accueil - CID' },
   { path: '/addAffaireCA', element: AddAffaireCA, title: 'Ajouter Affaire - CID' },
   { path: '/afficherAffaireCA', element: AfficherAffaireCA, title: 'Afficher Affaire - CID' },
@@ -42,12 +64,12 @@ const routes = [
   { path: '/AfficherMissionCA', element: AfficherMissionCA, title: 'Afficher Mission - CID' },
   { path: '/HomeCP', element: HomeCP, title: 'Accueil - CID' },
   { path: '/afficherAffaireCP', element: AfficherAffaireCP, title: 'Afficher Affaire - CID' },
-  { path: '/afficherMissionCP', element: afficherMissionCP, title: 'Afficher Mission - CID' },
+  { path: '/afficherMissionCP/:affaireId', element: AfficherMissionCP, title: 'Afficher Mission - CID' }, 
   { path: '/HomeCD', element: HomeCD, title: 'Accueil - CID' },
   { path: '/afficherAffaireCD', element: AfficherAffaireCD, title: 'Afficher Affaire - CID' },
-  { path: '/AddDivisionsCD', element: AddDivisionsCD, title: 'Ajouter Divisions - CID' },
-  { path: '/afficherMissionCD', element: AfficherMissionCD, title: 'Afficher Mission - CID' },
-  { path: '/designationChefProjetCD', element: DesignationChefProjetCD, title: 'Designation de Chef de Projet - CID' },
+  { path: '/repartirMissionCD/:idMission', element: RepartirMissionCD, title: 'Répartir les Missions - CID' },
+  { path: '/afficherMissionCD/:idAffaire', element: AfficherMissionCD, title: 'Afficher Mission - CID' },
+  { path: '/designationChefProjetCD/:idAffaire', element: DesignationChefProjetCD, title: 'Designation de Chef de Projet - CID' },
   { path: '/HomeCDP', element: HomeCDP, title: 'Accueil - CID' },
   { path: '/afficherAffaireCDP', element: AfficherAffaireCDP, title: 'Afficher Affaire - CID' },
   { path: '/afficherMissionCDP', element: AfficherMissionCDP, title: 'Afficher Mission - CID' },
@@ -63,26 +85,35 @@ const routes = [
   { path: '/afficherSousTraitant', element: AfficherSousTraitant, title: 'Gestion des Sous-traitants - CID' },
   { path: '/afficherPartenaire', element: AfficherPartenaire, title: 'Gestion des Partenaires - CID' },
   { path: '/HomeAdmin', element: HomeAdmin, title: 'Accueil - CID' },
+  { path: '/profileCA', element: ProfilePageCA, title: 'Profile - CID' },
+  { path: '/logout', element: LogoutComponent, title: 'Logout - CID' },
+  { path: '/profileAdmin', element: ProfilePageAdmin, title: 'Profile - CID' },
+  { path: '/profileCP', element: ProfilePageCP, title: 'Profile - CID' },
 ];
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {routes.map(({ path, element: Element, title }) => (
-          <Route 
-            key={path} 
-            path={path} 
-            element={
-              <>
-                <PageMeta title={title} />
-                <Element />
-              </>
-            } 
-          />
-        ))}
-      </Routes>
-    </Router>
+    <UserProvider>
+      <AffaireProvider>
+        <Router>
+          <Routes>
+            {routes.map(({ path, element: Element, title }) => (
+              <Route 
+                key={path} 
+                path={path} 
+                element={
+                  <>
+                    <PageMeta title={title} />
+                    <Element />
+                  </>
+                } 
+              />
+            ))}
+            <Route path="/" element={<RootRedirect />} />
+          </Routes>
+        </Router>
+      </AffaireProvider>
+    </UserProvider>
   );
 }
 

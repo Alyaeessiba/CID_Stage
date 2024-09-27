@@ -10,6 +10,7 @@ import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import Sidebar from './components/sideBar';
 import MainHeader from './components/mainHeader';
 import Footer from './components/footer';
+import { useAffaire } from '../context/AffaireContext';
 
 const FormField = ({ label, id, type = 'text', placeholder, value, onChange, options, disabled, error, suggestion, onSuggestionClick }) => (
     <div className="mb-3 col-md-6 form-group">
@@ -67,6 +68,7 @@ const Breadcrumb = ({ items }) => (
 
 const AddAffaire = () => {
     const navigate = useNavigate();
+    const { setCurrentAffaireId } = useAffaire();
     const [formData, setFormData] = useState({
         id_affaire: '',
         libelle_affaire: '',
@@ -193,8 +195,12 @@ const AddAffaire = () => {
                     divisionPrincipale: { id_division: parseInt(formData.divisionPrincipale) },
                     partCID: parseFloat(formData.partCID)
                 };
-                await axios.post('http://localhost:8080/api/affaires', dataToSend);
+                const response = await axios.post('http://localhost:8080/api/affaires', dataToSend);
+                const newAffaireId = response.data.idAffaire;
+                setCurrentAffaireId(newAffaireId);
                 setShowSuccessModal(true);
+                // Navigate to AddMission with the new affaire ID
+                navigate('/addMissionCA', { state: { affaireId: newAffaireId } });
             } catch (error) {
                 console.error('Error adding affaire:', error);
                 alert('Erreur lors de l\'ajout de l\'affaire: ' + error.response?.data || error.message);
@@ -310,8 +316,8 @@ const AddAffaire = () => {
                     </p>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseSuccessModal}>
-                        Fermer
+                    <Button variant="primary" onClick={handleCloseSuccessModal}>
+                        Ajouter des missions
                     </Button>
                 </Modal.Footer>
             </Modal>

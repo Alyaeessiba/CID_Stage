@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.Date;
+import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "Mission")
@@ -20,32 +22,24 @@ public class Mission {
     @Column(nullable = false)
     private String libelle_mission;
 
-    @Column(name = "is_forfait", nullable = false)
-    private boolean isForfait;
-
-    @Column(nullable = false)
+    @Column(nullable = true)
     private int quantite;
 
-    @Column
-    private String unite;
+    @ManyToOne
+    @JoinColumn(name = "unite_id", nullable = false)
+    private Unite unite;
 
-    @Column(name = "prix_mission", nullable = false)
-    private Double prixMission;
+    @Column(name = "prix_mission_total", nullable = false)
+    private Double prixMissionTotal;
 
-    @Column(name = "prix_mission_CID", nullable = false)
-    private Double prixMissionCID;
+    @Column(name = "prix_mission_unitaire", nullable = true)
+    private Double prixMissionUnitaire;
 
-    @Column(name = "is_sous_traiter", nullable = false)
-    private boolean isSousTraiter;
-
-    @Column(name = "is_multi_division", nullable = false)
-    private boolean isMultiDivision;
+    @Column(name = "part_mission_CID", nullable = false)
+    private Double partMissionCID;
 
     @Column(name = "compte_client", nullable = false)
-    private Double compteClient;
-
-    @Column(name = "part_division_principale", nullable = false)
-    private Double partDivisionPrincipale;
+    private Double compteClient = 0.0; // Set a default value
 
     @Column(name = "date_debut", nullable = false)
     @Temporal(TemporalType.DATE)
@@ -64,10 +58,22 @@ public class Mission {
     private Date dateRecommencement;
 
     @ManyToOne
-    @JoinColumn(name = "division_principale")
-    private Division divisionPrincipale;
+    @JoinColumn(name = "affaire_id", nullable = false)
+    private Affaire affaire;
 
     @ManyToOne
-    @JoinColumn(name = "affaire")
-    private Affaire affaire;
+    @JoinColumn(name = "principal_division_id", nullable = false)
+    private Division principalDivision;
+
+    @Column(name = "part_div_principale")
+    private Double partDivPrincipale;
+
+    @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MissionDivision> secondaryDivisions = new HashSet<>();
+
+    @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MissionST> sousTraitants = new HashSet<>();
+
+    @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MissionPartenaire> partenaires = new HashSet<>();
 }
