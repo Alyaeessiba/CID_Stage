@@ -12,11 +12,9 @@ const SearchBar = ({ className, onSearch }) => {
 
     return (
         <div className={`input-group ${className}`}>
-            <div className="input-group-prepend">
-                <span className="input-group-text">
-                    <i className="fa fa-search search-icon" />
-                </span>
-            </div>
+            <span className="input-group-text">
+                <i className="fa fa-search search-icon" />
+            </span>
             <input 
                 type="text" 
                 placeholder="Rechercher..." 

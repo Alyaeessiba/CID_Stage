@@ -111,7 +111,7 @@ const HomeCP = () => {
                                 </li>
                             </ul>
                         </div>
-                        <h4>Aperçu des Affaires du Pôle</h4>
+                        <h4>Aperçu des Affaires</h4>
                         <Row className="mb-4">
                             <Col md={4}>
                                 <Card className="card-stats card-round">
@@ -234,7 +234,7 @@ const HomeCP = () => {
                             <Col lg={12}>
                                 <Card>
                                     <Card.Header>
-                                        <Card.Title as="h4">Performance des Affaires du Pôle</Card.Title>
+                                        <Card.Title as="h4">Performance des Affaires</Card.Title>
                                         <p className="card-category">Affaires par statut et par mois</p>
                                     </Card.Header>
                                     <Card.Body>

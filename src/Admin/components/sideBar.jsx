@@ -33,7 +33,7 @@ const Sidebar = ({ logo, menuItems = [] }) => (
     <div className="sidebar" data-background-color="dark">
         <div className="sidebar-logo">
             <div className="logo-header" data-background-color="dark">
-                <Link to="/HomeCA" className="logo">
+                <Link to="/HomeAdmin" className="logo">
                     <img src="/assets/img/logo.png" alt="navbar brand" className="navbar-brand" height={60} />
                 </Link>
                 <div className="nav-toggle">
@@ -52,7 +52,7 @@ const Sidebar = ({ logo, menuItems = [] }) => (
         <div className="sidebar-wrapper scrollbar scrollbar-inner">
             <div className="sidebar-content">
                 <ul className="nav nav-secondary">
-                    <SidebarItem href="/HomeCA" icon="fas fa-home" text="Accueil" />
+                    <SidebarItem href="/HomeAdmin" icon="fas fa-home" text="Accueil" />
                     <li className="nav-section">
                         <span className="sidebar-mini-icon">
                             <i className="fa fa-ellipsis-h" />

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.util.Objects;
 
 @Entity
 @Table(name = "Mission_Partenaire")
@@ -19,7 +20,7 @@ public class MissionPartenaire {
     @JoinColumn(name = "mission_id", nullable = false)
     private Mission mission;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "partenaire_id", nullable = false)
     private Partenaire partenaire;
 

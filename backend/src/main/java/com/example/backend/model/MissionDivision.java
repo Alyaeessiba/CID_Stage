@@ -19,7 +19,7 @@ public class MissionDivision {
     @JoinColumn(name = "mission_id", nullable = false)
     private Mission mission;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "division_id", nullable = false)
     private Division division;
 

@@ -12,6 +12,10 @@ import Sidebar from './components/sideBar';
 import MainHeader from './components/mainHeader';
 import Footer from './components/footer';
 
+// At the top of your file, configure axios
+axios.defaults.withCredentials = true;
+axios.defaults.timeout = 5000; // 5 seconds timeout
+
 const AfficherMissionCD = () => {
     const { idAffaire } = useParams();
     const [missions, setMissions] = useState([]);
@@ -20,21 +24,32 @@ const AfficherMissionCD = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedMission, setSelectedMission] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchAffaireAndMissions = async () => {
             try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch affaire data
                 const affaireResponse = await axios.get(`http://localhost:8080/api/affaires/${idAffaire}`);
                 setAffaire(affaireResponse.data);
 
+                // Fetch missions data
                 const missionsResponse = await axios.get(`http://localhost:8080/api/missions/affaire/${idAffaire}`);
                 setMissions(missionsResponse.data);
 
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
-                setError('Failed to fetch data. Please try again later.');
+                if (error.response) {
+                    setError(`Server error: ${error.response.status}`);
+                } else if (error.request) {
+                    setError('No response received from server. Please check your network connection.');
+                } else {
+                    setError(`Request error: ${error.message}`);
+                }
                 setLoading(false);
             }
         };
@@ -85,7 +100,7 @@ const AfficherMissionCD = () => {
     };
 
     if (loading) return <div>Loading...</div>;
-    if (error) return <div>{error}</div>;
+    if (error) return <div>Error: {error}</div>;
 
     return (
         <div className="wrapper">

@@ -37,6 +37,8 @@ import HomeAdmin from './Admin/HomeAdmin';
 import ProfilePageCA from './CadreAdmin/profileCA';
 import ProfilePageAdmin from './Admin/profileAdmin';
 import ProfilePageCP from './ChefPole/profileCP';
+import ProfilePageCD from './ChefDiv/profileCD';
+import ProfilePageCDP from './ChefProjet/profileCDP';
 
 function LogoutComponent() {
   const { setUser } = useUser();
@@ -72,8 +74,8 @@ const routes = [
   { path: '/designationChefProjetCD/:idAffaire', element: DesignationChefProjetCD, title: 'Designation de Chef de Projet - CID' },
   { path: '/HomeCDP', element: HomeCDP, title: 'Accueil - CID' },
   { path: '/afficherAffaireCDP', element: AfficherAffaireCDP, title: 'Afficher Affaire - CID' },
-  { path: '/afficherMissionCDP', element: AfficherMissionCDP, title: 'Afficher Mission - CID' },
-  { path: '/consultMissionCDP', element: ConsultMissionCDP, title: 'Consulter Mission - CID' },
+  { path: '/afficherMissionCDP/:idAffaire', element: AfficherMissionCDP, title: 'Afficher Mission - CID' },
+  { path: '/consultMissionCDP/:idMission', element: ConsultMissionCDP, title: 'Consulter Mission - CID' },
   { path: '/afficherUnite', element: AfficherUnite, title: 'Gestion des Unités - CID' },
   { path: '/afficherRole', element: AfficherRole, title: 'Gestion des Roles - CID' },
   { path: '/afficherUser', element: AfficherUser, title: 'Gestion des Utilisateurs - CID' },
@@ -89,6 +91,8 @@ const routes = [
   { path: '/logout', element: LogoutComponent, title: 'Logout - CID' },
   { path: '/profileAdmin', element: ProfilePageAdmin, title: 'Profile - CID' },
   { path: '/profileCP', element: ProfilePageCP, title: 'Profile - CID' },
+  { path: '/profileCD', element: ProfilePageCD, title: 'Profile - CID' },
+  { path: '/profileCDP', element: ProfilePageCDP, title: 'Profile - CID' },
 ];
 
 function App() {

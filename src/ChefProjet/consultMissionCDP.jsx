@@ -10,21 +10,20 @@ const ConsultMission = () => {
     // Mock data for the mission
     const [mission] = useState({
         id: 1,
-        libelle: "Gare LGV Casa Voyageurs",
-        prix: '342,000.00',
-        forfait: 'Oui',
-        division: 'ET',
-        pourcentage: '70 %'
+        libelle: "Étude de sol",
+        prix: '250,000.00 DH',
+        division: 'AUTOROUTES',
+        Montant: '250,000.00 DH'
     });
 
     // Mock data for avancements
     const [avancements, setAvancements] = useState([
-        { date_mise_a_jour: '2023-05-01T10:00:00', pourcentage_avancement: 30, commentaire: 'Début des travaux' },
-        { date_mise_a_jour: '2023-05-15T14:30:00', pourcentage_avancement: 50, commentaire: 'Progression satisfaisante' }
+        { date_mise_a_jour: '2024-05-01T10:00:00', Montant_avancement: 10000, commentaire: 'Début des travaux' },
+        { date_mise_a_jour: '2024-05-15T14:30:00', Montant_avancement: 50000, commentaire: 'Progression satisfaisante' }
     ]);
 
     const [newAvancement, setNewAvancement] = useState({
-        pourcentage: '',
+        Montant: '',
         commentaire: ''
     });
 
@@ -37,11 +36,11 @@ const ConsultMission = () => {
         e.preventDefault();
         const newEntry = {
             date_mise_a_jour: new Date().toISOString(),
-            pourcentage_avancement: parseInt(newAvancement.pourcentage),
+            Montant_avancement: parseInt(newAvancement.Montant),
             commentaire: newAvancement.commentaire
         };
         setAvancements([...avancements, newEntry]);
-        setNewAvancement({ pourcentage: '', commentaire: '' });
+        setNewAvancement({ Montant: '', commentaire: '' });
     };
 
     return (
@@ -66,9 +65,8 @@ const ConsultMission = () => {
                                     <Card.Body>
                                         <p><strong>Libellé :</strong> {mission.libelle}</p>
                                         <p><strong>Prix :</strong> {mission.prix}</p>
-                                        <p><strong>Forfait :</strong> {mission.forfait}</p>
                                         <p><strong>Division :</strong> {mission.division}</p>
-                                        <p><strong>Pourcentage :</strong> {mission.pourcentage}</p>
+                                        <p><strong>Montant :</strong> {mission.Montant}</p>
                                     </Card.Body>
                                 </Card>
                             </div>
@@ -80,11 +78,11 @@ const ConsultMission = () => {
                                     <Card.Body>
                                         <Form onSubmit={handleSubmitAvancement}>
                                             <Form.Group>
-                                                <Form.Label>Pourcentage d'avancement</Form.Label>
+                                                <Form.Label>Montant d'avancement</Form.Label>
                                                 <Form.Control
                                                     type="number"
-                                                    name="pourcentage"
-                                                    value={newAvancement.pourcentage}
+                                                    name="Montant"
+                                                    value={newAvancement.Montant}
                                                     onChange={handleInputChange}
                                                     required
                                                 />
@@ -118,7 +116,7 @@ const ConsultMission = () => {
                                             {avancements.map((avancement, index) => (
                                                 <ListGroup.Item key={index}>
                                                     <p style={{ marginRight: '0.5rem' }}><strong>Date :</strong> {new Date(avancement.date_mise_a_jour).toLocaleString()}</p>
-                                                    <p style={{ marginRight: '0.5rem' }}><strong>Pourcentage :</strong> {avancement.pourcentage_avancement}%</p>
+                                                    <p style={{ marginRight: '0.5rem' }}><strong>Montant :</strong> {avancement.Montant_avancement}%</p>
                                                     <p style={{ marginRight: 0 }}><strong>Commentaire :</strong> {avancement.commentaire}</p>
                                                 </ListGroup.Item>
                                             ))}

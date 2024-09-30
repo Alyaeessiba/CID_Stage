@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
 import java.util.Date;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Objects;
 
 @Entity
 @Table(name = "Mission")
@@ -76,4 +76,17 @@ public class Mission {
 
     @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MissionPartenaire> partenaires = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Mission)) return false;
+        Mission mission = (Mission) o;
+        return Objects.equals(getId_mission(), mission.getId_mission());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId_mission());
+    }
 }

@@ -19,7 +19,7 @@ public class MissionST {
     @JoinColumn(name = "mission_id", nullable = false)
     private Mission mission;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sous_traitant_id", nullable = false)
     private SousTraitant sousTraitant;
 

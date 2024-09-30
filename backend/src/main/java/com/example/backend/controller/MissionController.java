@@ -1,7 +1,9 @@
 package com.example.backend.controller;
 
+import com.example.backend.DTO.*;
 import com.example.backend.model.*;
 import com.example.backend.repository.*;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/missions")
@@ -47,17 +50,9 @@ public class MissionController {
     @Autowired
     private SousTraitantRepository sousTraitantRepository;
 
-    @GetMapping
-    public List<Mission> getAllMissions() {
-        return missionRepository.findAll();
-    }
+    @Autowired
+    private ModelMapper modelMapper;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Mission> getMissionById(@PathVariable Long id) {
-        return missionRepository.findById(id)
-                .map(mission -> ResponseEntity.ok().body(mission))
-                .orElse(ResponseEntity.notFound().build());
-    }
 
     @PostMapping
     public ResponseEntity<?> createMission(@RequestBody Mission mission) {
@@ -155,12 +150,73 @@ public class MissionController {
     }
 
     @GetMapping("/affaire/{affaireId}")
-    public ResponseEntity<List<Mission>> getMissionsByAffaireId(@PathVariable Long affaireId) {
+    public ResponseEntity<List<MissionDTO>> getMissionsByAffaireId(@PathVariable Long affaireId) {
         List<Mission> missions = missionRepository.findByAffaireIdAffaire(affaireId);
         if (missions.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(missions);
+        
+        List<MissionDTO> missionDTOs = missions.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(missionDTOs);
+    }
+
+    private MissionDTO convertToDTO(Mission mission) {
+        MissionDTO dto = modelMapper.map(mission, MissionDTO.class);
+        
+        // Set specific fields that might need manual mapping
+        if (mission.getAffaire() != null) {
+            dto.setAffaireId(mission.getAffaire().getIdAffaire());
+        }
+        if (mission.getPrincipalDivision() != null) {
+            DivisionDTO principalDivisionDTO = modelMapper.map(mission.getPrincipalDivision(), DivisionDTO.class);
+            dto.setPrincipalDivisionId(principalDivisionDTO.getId_division());
+            dto.setPrincipalDivision(principalDivisionDTO);
+        }
+        if (mission.getUnite() != null) {
+            dto.setUniteId(mission.getUnite().getId_unite());
+        }
+        
+        // Map nested objects
+        dto.setMissionDivisions(mission.getSecondaryDivisions().stream()
+            .map(div -> {
+                MissionDivisionDTO missionDivisionDTO = new MissionDivisionDTO();
+                missionDivisionDTO.setId(div.getId());
+                missionDivisionDTO.setMissionId(div.getMission().getId_mission());
+                missionDivisionDTO.setDivisionId(div.getDivision().getId_division());
+                missionDivisionDTO.setDivision(modelMapper.map(div.getDivision(), DivisionDTO.class));
+                missionDivisionDTO.setPartMission(div.getPartMission());
+                return missionDivisionDTO;
+            })
+            .collect(Collectors.toList()));
+        
+        dto.setMissionSousTraitants(mission.getSousTraitants().stream()
+            .map(st -> {
+                MissionSTDTO missionSTDTO = new MissionSTDTO();
+                missionSTDTO.setId(st.getId());
+                missionSTDTO.setMissionId(st.getMission().getId_mission());
+                missionSTDTO.setSousTraitantId(st.getSousTraitant().getId_soustrait());
+                missionSTDTO.setSousTraitant(modelMapper.map(st.getSousTraitant(), SousTraitantDTO.class));
+                missionSTDTO.setPartMission(st.getPartMission());
+                return missionSTDTO;
+            })
+            .collect(Collectors.toList()));
+        
+        dto.setMissionPartenaires(mission.getPartenaires().stream()
+            .map(p -> {
+                MissionPartenaireDTO missionPartenaireDTO = new MissionPartenaireDTO();
+                missionPartenaireDTO.setId(p.getId());
+                missionPartenaireDTO.setMissionId(p.getMission().getId_mission());
+                missionPartenaireDTO.setPartenaireId(p.getPartenaire().getId_partenaire());
+                missionPartenaireDTO.setPartenaire(modelMapper.map(p.getPartenaire(), PartenaireDTO.class));
+                missionPartenaireDTO.setPartMission(p.getPartMission());
+                return missionPartenaireDTO;
+            })
+            .collect(Collectors.toList()));
+
+        return dto;
     }
 
     @PostMapping("/{id}/repartition")
@@ -293,6 +349,39 @@ public class MissionController {
         }
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<MissionDTO> getMissionDetails(@PathVariable Long id) {
+        try {
+            Mission mission = missionRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Mission not found"));
+
+            MissionDTO missionDTO = modelMapper.map(mission, MissionDTO.class);
+
+            // Map secondary divisions
+            List<MissionDivisionDTO> secondaryDivisions = mission.getSecondaryDivisions().stream()
+                    .map(div -> modelMapper.map(div, MissionDivisionDTO.class))
+                    .collect(Collectors.toList());
+            missionDTO.setMissionDivisions(secondaryDivisions);
+
+            // Map sous-traitants
+            List<MissionSTDTO> sousTraitants = mission.getSousTraitants().stream()
+                    .map(st -> modelMapper.map(st, MissionSTDTO.class))
+                    .collect(Collectors.toList());
+            missionDTO.setMissionSousTraitants(sousTraitants);
+
+            // Map partenaires
+            List<MissionPartenaireDTO> partenaires = mission.getPartenaires().stream()
+                    .map(p -> modelMapper.map(p, MissionPartenaireDTO.class))
+                    .collect(Collectors.toList());
+            missionDTO.setMissionPartenaires(partenaires);
+
+            return ResponseEntity.ok(missionDTO);
+        } catch (Exception e) {
+            logger.error("Error fetching mission details", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     public static class PartDivPrincipaleDTO {
         private Double partDivPrincipale;
 
@@ -351,77 +440,6 @@ public class MissionController {
                     ", partenaires=" + partenaires +
                     ", sousTraitants=" + sousTraitants +
                     '}';
-        }
-    }
-
-    public static class MissionDivisionDTO {
-        private Long divisionId;
-        private Double partMission;
-
-        public Long getDivisionId() {
-            return divisionId;
-        }
-
-        public void setDivisionId(Long divisionId) {
-            this.divisionId = divisionId;
-        }
-
-        public Double getPartMission() {
-            return partMission;
-        }
-
-        public void setPartMission(Double partMission) {
-            this.partMission = partMission;
-        }
-
-        @Override
-        public String toString() {
-            return "MissionDivisionDTO{" +
-                    "divisionId=" + divisionId +
-                    ", partMission=" + partMission +
-                    '}';
-        }
-    }
-
-    public static class MissionPartenaireDTO {
-        private Long partenaireId;
-        private Double partMission;
-
-        public Long getPartenaireId() {
-            return partenaireId;
-        }
-
-        public void setPartenaireId(Long partenaireId) {
-            this.partenaireId = partenaireId;
-        }
-
-        public Double getPartMission() {
-            return partMission;
-        }
-
-        public void setPartMission(Double partMission) {
-            this.partMission = partMission;
-        }
-    }
-
-    public static class MissionSTDTO {
-        private Long sousTraitantId;
-        private Double partMission;
-
-        public Long getSousTraitantId() {
-            return sousTraitantId;
-        }
-
-        public void setSousTraitantId(Long sousTraitantId) {
-            this.sousTraitantId = sousTraitantId;
-        }
-
-        public Double getPartMission() {
-            return partMission;
-        }
-
-        public void setPartMission(Double partMission) {
-            this.partMission = partMission;
         }
     }
 }
