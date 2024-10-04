@@ -82,7 +82,6 @@ INSERT INTO Pays (libelle_pays) VALUES ('Irak');
 INSERT INTO Pays (libelle_pays) VALUES ('Iran');
 INSERT INTO Pays (libelle_pays) VALUES ('Irlande');
 INSERT INTO Pays (libelle_pays) VALUES ('Islande');
-INSERT INTO Pays (libelle_pays) VALUES ('Israël');
 INSERT INTO Pays (libelle_pays) VALUES ('Italie');
 INSERT INTO Pays (libelle_pays) VALUES ('Jamaïque');
 INSERT INTO Pays (libelle_pays) VALUES ('Japon');
